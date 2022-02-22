@@ -6,30 +6,20 @@
 
 from datetime import datetime
 import gspread
+from twilio.rest import Client
+from dotenv import load_dotenv
+import os
+
+load_dotenv()  # take environment variables from .env
 
 # dev or production?
+# dev == True
+# production == False
 debug = True
 
 service_account = gspread.service_account()
 sheet = service_account.open("MALAYSIA HALL DINNER SEM 2/21")
 worksheet = sheet.worksheets()[0]  # get the latest worksheet
-
-
-def what_day_is_today(day):
-    if day == 0:
-        return "Monday"
-    elif day == 1:
-        return "Tuesday"
-    elif day == 2:
-        return "Wednesday"
-    elif day == 3:
-        return "Thursday"
-    elif day == 4:
-        return "Friday"
-    elif day == 5:
-        return "Saturday"
-    else:
-        return "Sunday"
 
 
 def day_count(day):
@@ -49,47 +39,75 @@ def todays_menu(day):
         return worksheet.acell("G6").value
 
 
-# 0 == Monday
-# 1 == Tuesday
-# 2 == Wednesday
-# 3 == Thursday
-# 4 == Friday
+client = Client(os.getenv("TWILIO_ACCOUNT_SID"), os.getenv("TWILIO_API_KEY"))
 day = datetime.today().weekday()
+
 ### DEV/TESTING ###
 if debug:
-    day_count = 2
-    print("Salam Abg Sam", "\n")
-    print("Menu hari ni:")
-    print(todays_menu(day_count), "\n")
+    day_count = 3
+    body = ""
+    body = body + "Salam Abg Sam\n\nMenu hari ni:\n" + todays_menu(day_count) + "\n\n"
     i = 1
     for cell in worksheet.get("B11:I41"):
-        if cell[day_count]:
-            if int(cell[day_count]) > 1:
+        if len(cell) > day_count and cell[day_count]:
+            pack_count = int(cell[day_count][0])
+            if pack_count > 1:
                 letter = 65
                 for count in range(int(cell[day_count])):
-                    print(str(i) + ".", cell[0].capitalize(), chr(letter))
+                    body = (
+                        body
+                        + str(i)
+                        + ". "
+                        + cell[0].capitalize()
+                        + " "
+                        + chr(letter)
+                        + "\n"
+                    )
                     letter += 1
                     i += 1
             else:
-                print(str(i) + ".", cell[0].capitalize())
+                body = body + str(i) + ". " + cell[0].capitalize() + "\n"
                 i += 1
-    print("\n", f"Total {i - 1} pax hari ni. Thank you Abg Sam!")
+    body = body + "\n\n" + f"Total {i - 1} pax hari ni. Thank you Abg Sam!"
+    message = client.messages.create(
+        messaging_service_sid=os.getenv("TWILIO_MESSAGING_SERVICE_SID"),
+        body=body,
+        to=os.getenv("FOOD_DIRECTOR_PHONE_NUMBER"),
+    )
 ### PRODUCTION ###
 else:
+    # 0 == Monday
+    # 1 == Tuesday
+    # 2 == Wednesday
+    # 3 == Thursday
+    # 4 == Friday
     if day >= 0 and day < 5:  # no orders on weekends
-        print("Salam Abg Sam", "\n")
-        print("Menu hari ni:")
-        print(todays_menu(day), "\n")
+        body = ""
+        body = body + "Salam Abg Sam\n\nMenu hari ni:\n" + todays_menu(day) + "\n\n"
         i = 1
         for cell in worksheet.get("B11:I41"):  # DO NOT CHANGE THE CELLS' VALUES
-            if cell[day_count(day)]:
-                if int(cell[day_count(day)]) > 1:
+            if len(cell) > day_count(day) and cell[day_count(day)]:
+                pack_count = int(cell[day_count(day)][0])
+                if pack_count > 1:
                     letter = 65
                     for count in range(int(cell[day_count(day)])):
-                        print(str(i) + ".", cell[0].capitalize(), chr(letter))
+                        body = (
+                            body
+                            + str(i)
+                            + ". "
+                            + cell[0].capitalize()
+                            + " "
+                            + chr(letter)
+                            + "\n"
+                        )
                         letter += 1
                         i += 1
                 else:
-                    print(str(i) + ".", cell[0].capitalize())
+                    body = body + str(i) + ". " + cell[0].capitalize() + "\n"
                     i += 1
-        print("\n", f"Total {i - 1} pax hari ni. Thank you Abg Sam!")
+        body = body + "\n\n" + f"Total {i - 1} pax hari ni. Thank you Abg Sam!"
+        message = client.messages.create(
+            messaging_service_sid=os.getenv("TWILIO_MESSAGING_SERVICE_SID"),
+            body=body,
+            to=os.getenv("FOOD_DIRECTOR_PHONE_NUMBER"),
+        )
