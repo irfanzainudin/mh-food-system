@@ -96,10 +96,10 @@ def todays_menu(day, menu_count):
     todays_menu = []
     today = int_to_day(day)
     col_number = find_in_worksheet_values(today)[1]
-    for menu_count in range(menu_count[today]):
-        col_number += menu_count
+    for i in range(menu_count[today]):
         menu = find_in_worksheet_cells(MENU_ROW, col_number).value
         todays_menu.append(menu)
+        col_number += 1
 
     return todays_menu
 
@@ -128,9 +128,9 @@ def todays_order():
     client = Client(os.getenv("TWILIO_ACCOUNT_SID"), os.getenv("TWILIO_API_KEY"))
     # day = datetime.today().weekday()
     day = 2
-    menu_count = calculate_menu_count_for_each_day()
 
     if day >= 0 and day < 5:  # no orders on weekends
+        menu_count = calculate_menu_count_for_each_day()
         body = ""
         body = body + "Salam Abg Sam\n\nMenu hari ni:\n"
         today = int_to_day(day)
@@ -146,13 +146,11 @@ def todays_order():
         # traverse to the TOTAL_HALL_RESIDENTS-th row
         # and menu_count[today]-th column after
         # the starting row and column respectively
-        # i = 1
         who_ordered_what = {}
         how_many_have_a_resident_ordered = {}
         for menu in range(menu_count[today]):
             residents_who_ordered = []
             menu_items = todays_menu(day, menu_count)[menu]
-            body = body + "\n" + menu_items + "\n\n"
             contoh_cell_position = find_in_worksheet_values("Contoh")
             DISTANCE_BETWEEN_CONTOH_CELL_AND_FIRST_PERSON = 1
             person_row = (
@@ -175,18 +173,12 @@ def todays_order():
                     pack_count = int(order_cell.value)
                     if pack_count > 1:
                         for count in range(pack_count):
-                            residents_who_ordered.append(
-                                # person_cell.value + " " + chr(letter)
-                                person_cell.value
-                            )
+                            residents_who_ordered.append(person_cell.value)
                             who_ordered_what[menu_items] = residents_who_ordered
                             letter += 1
                             how_many_have_a_resident_ordered[person_cell.value] = letter
                     else:
-                        residents_who_ordered.append(
-                            # person_cell.value + " " + chr(letter)
-                            person_cell.value
-                        )
+                        residents_who_ordered.append(person_cell.value)
                         who_ordered_what[menu_items] = residents_who_ordered
                         letter += 1
                         how_many_have_a_resident_ordered[person_cell.value] = letter
@@ -212,15 +204,22 @@ def todays_order():
                     letter_tracking[resident] = letter_A
         i = 1
         for menu_items, residents in who_ordered_what.items():
-            print("\n" + menu_items + "\n")
+            body += "\n" + menu_items + "\n\n"
             for resident in residents:
                 if resident in those_ordered_more_than_one:
                     current_letter = letter_tracking[resident]
-                    print(f"{str(i)}. {resident.capitalize()} {chr(current_letter)}")
+                    body += f"{str(i)}. {resident.capitalize()} {chr(current_letter)}\n"
                     letter_tracking[resident] += 1
                 else:
-                    print(f"{str(i)}. {resident.capitalize()}")
+                    body += f"{str(i)}. {resident.capitalize()}\n"
                 i += 1
+        body = body + "\n\n" + f"Total {i - 1} pax hari ni.\nThank you Abg Sam!\n"
+        print(body)
+        # message = client.messages.create(
+        #     messaging_service_sid=os.getenv("TWILIO_MESSAGING_SERVICE_SID"),
+        #     body=body,
+        #     to=os.getenv("FOOD_DIRECTOR_PHONE_NUMBER"),
+        # )
 
 
 """
