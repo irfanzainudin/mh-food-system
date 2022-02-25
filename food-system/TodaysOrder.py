@@ -8,6 +8,9 @@
 #   the Google Spreadsheet WILL and SHALL
 #   break the code
 
+# IMPROVEMENTS:
+# 1. To be more precise in terms of finding menu items
+
 from datetime import datetime
 import gspread
 from twilio.rest import Client
@@ -202,8 +205,10 @@ def todays_order():
                         resident
                     ]
                     letter_tracking[resident] = letter_A
-        i = 1
+        total_pax = 0
+        pax_for_menu_items = {}
         for menu_items, residents in who_ordered_what.items():
+            i = 1
             body += "\n" + menu_items + "\n\n"
             for resident in residents:
                 if resident in those_ordered_more_than_one:
@@ -213,42 +218,16 @@ def todays_order():
                 else:
                     body += f"{str(i)}. {resident.capitalize()}\n"
                 i += 1
-        body = body + "\n\n" + f"Total {i - 1} pax hari ni.\nThank you Abg Sam!\n"
-        print(body)
-        # message = client.messages.create(
-        #     messaging_service_sid=os.getenv("TWILIO_MESSAGING_SERVICE_SID"),
-        #     body=body,
-        #     to=os.getenv("FOOD_DIRECTOR_PHONE_NUMBER"),
-        # )
+                total_pax += 1
+            pax_for_menu_items[menu_items] = i
+        for menu, pax in pax_for_menu_items.items():
+            body += f"\n{pax - 1} pax for {menu}\n\n"
+        body += "\n" + f"Total {total_pax} pax hari ni.\nThank you Abg Sam!\n"
+        message = client.messages.create(
+            messaging_service_sid=os.getenv("TWILIO_MESSAGING_SERVICE_SID"),
+            body=body,
+            to=os.getenv("FOOD_DIRECTOR_PHONE_NUMBER"),
+        )
 
-
-"""
-for cell in worksheet.get("B11:I41"):  # DO NOT CHANGE THE CELLS' VALUES
-    if len(cell) > day_count(day) and cell[day_count(day)]:
-        pack_count = int(cell[day_count(day)][0])
-        if pack_count > 1:
-            letter = 65
-            for count in range(int(cell[day_count(day)])):
-                body = (
-                    body
-                    + str(i)
-                    + ". "
-                    + cell[0].capitalize()
-                    + " "
-                    + chr(letter)
-                    + "\n"
-                )
-                letter += 1
-                i += 1
-        else:
-            body = body + str(i) + ". " + cell[0].capitalize() + "\n"
-            i += 1
-body = body + "\n\n" + f"Total {i - 1} pax hari ni.\nThank you Abg Sam!"
-message = client.messages.create(
-    messaging_service_sid=os.getenv("TWILIO_MESSAGING_SERVICE_SID"),
-    body=body,
-    to=os.getenv("FOOD_DIRECTOR_PHONE_NUMBER"),
-)
-"""
 
 todays_order()
