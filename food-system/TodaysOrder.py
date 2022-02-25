@@ -5,7 +5,7 @@
 # This code's weakness:
 # 1. [NOT ROBUST]
 #   - changes to the template of
-#   the Google Spreadsheet will
+#   the Google Spreadsheet WILL and SHALL
 #   break the code
 
 from datetime import datetime
@@ -126,7 +126,8 @@ def find_in_worksheet_values(needle):
 
 def todays_order():
     client = Client(os.getenv("TWILIO_ACCOUNT_SID"), os.getenv("TWILIO_API_KEY"))
-    day = datetime.today().weekday()
+    # day = datetime.today().weekday()
+    day = 2
     menu_count = calculate_menu_count_for_each_day()
 
     if day >= 0 and day < 5:  # no orders on weekends
@@ -145,8 +146,11 @@ def todays_order():
         # traverse to the TOTAL_HALL_RESIDENTS-th row
         # and menu_count[today]-th column after
         # the starting row and column respectively
+        # i = 1
+        who_ordered_what = {}
+        how_many_have_a_resident_ordered = {}
         for menu in range(menu_count[today]):
-            i = 1
+            residents_who_ordered = []
             menu_items = todays_menu(day, menu_count)[menu]
             body = body + "\n" + menu_items + "\n\n"
             contoh_cell_position = find_in_worksheet_values("Contoh")
@@ -167,29 +171,56 @@ def todays_order():
                     and len(person_cell.value) > 0
                     and len(order_cell.value) > 0
                 ):
+                    letter = 65
                     pack_count = int(order_cell.value)
                     if pack_count > 1:
-                        letter = 65
                         for count in range(pack_count):
-                            body = (
-                                body
-                                + str(i)
-                                + ". "
-                                + person_cell.value.capitalize()
-                                + " "
-                                + chr(letter)
-                                + "\n"
+                            residents_who_ordered.append(
+                                # person_cell.value + " " + chr(letter)
+                                person_cell.value
                             )
+                            who_ordered_what[menu_items] = residents_who_ordered
                             letter += 1
-                            i += 1
+                            how_many_have_a_resident_ordered[person_cell.value] = letter
                     else:
-                        body = (
-                            body + str(i) + ". " + person_cell.value.capitalize() + "\n"
+                        residents_who_ordered.append(
+                            # person_cell.value + " " + chr(letter)
+                            person_cell.value
                         )
-                        i += 1
+                        who_ordered_what[menu_items] = residents_who_ordered
+                        letter += 1
+                        how_many_have_a_resident_ordered[person_cell.value] = letter
                 else:
                     continue
-        print(body)
+        # Find how many food one resident
+        # ordered across different menus
+        # on the same day
+        # eg. Iwan order 1 nasi tomato & 2 bubur ayam
+        letter_A = 65
+        letter_tracking = {}
+        who_ordered_what_count = {}
+        those_ordered_more_than_one = {}
+        for menu_items, residents in who_ordered_what.items():
+            for resident in residents:
+                if resident not in who_ordered_what_count:
+                    who_ordered_what_count[resident] = 1
+                else:
+                    who_ordered_what_count[resident] += 1
+                    those_ordered_more_than_one[resident] = who_ordered_what_count[
+                        resident
+                    ]
+                    letter_tracking[resident] = letter_A
+        i = 1
+        for menu_items, residents in who_ordered_what.items():
+            print("\n" + menu_items + "\n")
+            for resident in residents:
+                if resident in those_ordered_more_than_one:
+                    current_letter = letter_tracking[resident]
+                    print(f"{str(i)}. {resident.capitalize()} {chr(current_letter)}")
+                    letter_tracking[resident] += 1
+                else:
+                    print(f"{str(i)}. {resident.capitalize()}")
+                i += 1
 
 
 """
