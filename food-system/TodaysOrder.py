@@ -129,8 +129,7 @@ def find_in_worksheet_values(needle):
 
 def todays_order():
     client = Client(os.getenv("TWILIO_ACCOUNT_SID"), os.getenv("TWILIO_API_KEY"))
-    # day = datetime.today().weekday()
-    day = 2
+    day = datetime.today().weekday()
 
     if day >= 0 and day < 5:  # no orders on weekends
         menu_count = calculate_menu_count_for_each_day()
