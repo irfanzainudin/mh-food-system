@@ -238,4 +238,4 @@ def todays_order():
         )
 
 
-schedule.every().day.at("10:30").do(todays_order)
+schedule.every().day.at("12:30").do(todays_order)
