@@ -16,6 +16,7 @@ import gspread
 from twilio.rest import Client
 from dotenv import load_dotenv
 import os
+import schedule
 
 load_dotenv()  # take environment variables from .env
 
@@ -237,4 +238,4 @@ def todays_order():
         )
 
 
-todays_order()
+schedule.every().day.at("10:30").do(todays_order)
