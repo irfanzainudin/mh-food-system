@@ -101,7 +101,6 @@ def calculate_menu_count_for_each_day():
             prev_col = result.col
         elif day == "Friday":
             result = find_in_worksheet_cells(day_position[0], day_position[1])
-            print(result)
             menu_count_for_each_day[prev_day] = result.col - prev_col
             prev_day = day
             prev_col = result.col
