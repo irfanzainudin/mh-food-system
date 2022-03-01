@@ -19,14 +19,6 @@ import os
 
 load_dotenv()  # take environment variables from .env
 
-###########
-# GLOBALS #
-###########
-
-WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
-MENU_ROW = "2"
-TOTAL_HALL_RESIDENTS = 31
-
 ####################
 # CONNECTION SETUP #
 ####################
@@ -38,8 +30,23 @@ worksheet = sheet.worksheets()[0]  # get the latest worksheet
 worksheet_cells = worksheet.get_all_cells()
 worksheet_values = worksheet.get()
 
-# print(worksheet_cells)
-# print(worksheet_values)
+###########
+# GLOBALS #
+###########
+
+WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+MENU_ROW = "2"
+TOTAL_HALL_RESIDENTS = 31
+# Before this, I hardcoded "31" to be
+# the total number of columns, that
+# was a mistake because I started to
+# doubt the *Equation that I geniusly (haha)
+# figure out
+# *Equation ==  equation to find the exact
+#               cell in the huge array that
+#               we get from calling the function
+#               get_all_cells()
+COL_COUNT = worksheet.col_count
 
 #######################
 # AUXILIARY FUNCTIONS #
@@ -63,6 +70,21 @@ def day_count(day):
     return day + 1
 
 
+def find_in_worksheet_cells(row, col):
+    row = int(row)
+    col = int(col)
+    position = (COL_COUNT * (row - 1)) + (col - 1)
+    return worksheet_cells[position]
+
+
+def find_in_worksheet_values(needle):
+    for i, haystack in enumerate(worksheet_values, start=1):
+        if len(haystack) > 0:
+            for j, stack in enumerate(haystack, start=1):
+                if stack == needle:
+                    return i, j
+
+
 def calculate_menu_count_for_each_day():
     menu_count_for_each_day = {}
 
@@ -79,6 +101,7 @@ def calculate_menu_count_for_each_day():
             prev_col = result.col
         elif day == "Friday":
             result = find_in_worksheet_cells(day_position[0], day_position[1])
+            print(result)
             menu_count_for_each_day[prev_day] = result.col - prev_col
             prev_day = day
             prev_col = result.col
@@ -105,21 +128,6 @@ def todays_menu(day, menu_count):
         col_number += 1
 
     return todays_menu
-
-
-def find_in_worksheet_cells(row, col):
-    row = int(row)
-    col = int(col)
-    position = (31 * (row - 1)) + (col - 1)
-    return worksheet_cells[position]
-
-
-def find_in_worksheet_values(needle):
-    for i, haystack in enumerate(worksheet_values, start=1):
-        if len(haystack) > 0:
-            for j, stack in enumerate(haystack, start=1):
-                if stack == needle:
-                    return i, j
 
 
 #################
@@ -222,6 +230,7 @@ def todays_order():
         for menu, pax in pax_for_menu_items.items():
             body += f"\n{pax - 1} pax for {menu}\n\n"
         body += "\n" + f"Total {total_pax} pax hari ni.\nThank you Abg Sam!\n"
+        # print(body)
         message = client.messages.create(
             messaging_service_sid=os.getenv("TWILIO_MESSAGING_SERVICE_SID"),
             body=body,
